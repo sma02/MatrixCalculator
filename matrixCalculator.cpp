@@ -1,4 +1,6 @@
 #include <iostream>
+#include <windows.h>
+#include <conio.h>
 using namespace std;
 
 int A[3 * 3];
@@ -19,6 +21,16 @@ void subtractMatrices(int assignmentMatrix[], int matrix1[], int matrix2[], int 
 void multiplyMatrices(int assignmentMatrix[], int matrix1[], int matrix2[], int rows, int cols);
 void scalerMultiplyMatrix(int assignmentMatrix[], int matrix[], int scalerFactor, int rows, int cols);
 bool commandHandler(string line);
+void takeLine(string &str);
+void setColor(short color);
+void printBooleanValue(bool val);
+short getColor();
+int getCursorX();
+int getCursorY();
+void gotoxy(int x, int y);
+void handleCharacterColors(char character);
+void handleCommandColors(string str);
+void setConsoleCursor(bool visibility);
 string parseData(string line, int fieldNumber, int startingPos, char seperator);
 
 int main()
@@ -26,8 +38,10 @@ int main()
     string line;
     while (1)
     {
+        setColor(0x8);
         cout << ">>";
-        getline(cin, line);
+        setColor(0x7);
+        takeLine(line);
         matrixAssignmentHandler(line);
         commandHandler(line);
     }
@@ -63,25 +77,38 @@ void matrixAssignmentHandler(string line)
         }
     }
 }
-
+void printBooleanValue(bool val)
+{
+    cout << endl;
+    setColor(0x03);
+    if (val)
+    {
+        cout << "true";
+    }
+    else
+    {
+        cout << "false";
+    }
+    cout << endl;
+    setColor(0x7);
+}
 bool commandHandler(string line)
 {
-    char newline = '\n';
     if (isCommandPresent("print", line))
     {
         printMatrix(detectMatrix(line[6]), 3, 3);
     }
     else if (isCommandPresent("isIdentity", line))
     {
-        cout << newline << isIdentityMatrix(detectMatrix(line[11]), 3, 3) << newline;
+        printBooleanValue(isIdentityMatrix(detectMatrix(line[11]), 3, 3));
     }
     else if (isCommandPresent("isDiagonal", line))
     {
-        cout << newline << isDiagonalMatrix(detectMatrix(line[11]), 3, 3) << newline;
+        printBooleanValue(isDiagonalMatrix(detectMatrix(line[11]), 3, 3));
     }
     else if (isCommandPresent("isSymmetric", line))
     {
-        cout << newline << isSymmetricMatrix(detectMatrix(line[12]), 3, 3) << newline;
+        printBooleanValue(isSymmetricMatrix(detectMatrix(line[12]), 3, 3));
     }
     else if (isCommandPresent("transpose", line))
     {
@@ -142,6 +169,7 @@ void initalizeMatrix(int matrix[], int rows, int cols, string data)
 void printMatrix(int matrix[], int rows, int cols)
 {
     cout << endl;
+    setColor(0x3);
     for (int i = 0; i < rows; i++)
     {
         for (int j = 0; j < cols; j++)
@@ -150,6 +178,7 @@ void printMatrix(int matrix[], int rows, int cols)
         }
         cout << endl;
     }
+    setColor(0x7);
 }
 bool isIdentityMatrix(int matrix[], int rows, int cols)
 {
@@ -291,4 +320,133 @@ string parseData(string line, int fieldNumber, int startingPos, char seperator)
             return result;
         }
     }
+}
+void takeLine(string &str)
+{
+    str = "";
+    char c = 0;
+    while (1)
+    {
+        if (kbhit())
+        {
+            c = getch();
+            if (c == '\b')
+            {
+                if (str.length())
+                {
+                    cout << '\b';
+                    cout << ' ';
+                    cout << '\b';
+                    str.erase(str.size() - 1);
+                    handleCommandColors(str);
+                }
+            }
+            else if (c == -32)
+            {
+                while (kbhit())
+                {
+                    getch();
+                }
+            }
+            else if (c == VK_RETURN)
+            {
+                while (kbhit())
+                {
+                    getch();
+                }
+                handleCharacterColors(c);
+                cout << endl;
+                break;
+            }
+            else
+            {
+                str += c;
+                handleCharacterColors(c);
+                cout << c;
+                handleCommandColors(str);
+            }
+        }
+    }
+}
+void handleCommandColors(string str)
+{
+    string temp = str.substr(0, str.find('('));
+    if (temp == "print" || temp == "isIdentity" || temp == "isDiagonal" || temp == "isSymmetric" || temp == "transpose" || temp == "exit")
+    {
+        setColor(0x6);
+        gotoxy(2, getCursorY());
+        cout << temp;
+        gotoxy(2 + str.length(), getCursorY());
+        setColor(0x7);
+    }
+    else if (temp == "prin" || temp == "isIdentit" || temp == "isDiagona" || temp == "isSymmetri" || temp == "transpos" || temp == "exi")
+    {
+        setColor(0x7);
+        gotoxy(2, getCursorY());
+        cout << temp;
+    }
+}
+void handleCharacterColors(char character)
+{
+    if (character >= 'A' && character <= 'C')
+    {
+        setColor(0x3);
+    }
+    else if (character == '=')
+    {
+        setColor(0xD);
+    }
+    else if (character == '{' || character == '}')
+    {
+        setColor(0x6);
+    }
+    else if (character == '(' || character == ')')
+    {
+        setColor(0xA);
+    }
+    else if (character == ',')
+    {
+        setColor(0x2);
+    }
+    else
+    {
+        setColor(0x7);
+    }
+}
+int getCursorX()
+{
+    CONSOLE_SCREEN_BUFFER_INFO csbi;
+    GetConsoleScreenBufferInfo(GetStdHandle(STD_OUTPUT_HANDLE), &csbi);
+    return csbi.dwCursorPosition.X;
+}
+int getCursorY()
+{
+    CONSOLE_SCREEN_BUFFER_INFO csbi;
+    GetConsoleScreenBufferInfo(GetStdHandle(STD_OUTPUT_HANDLE), &csbi);
+    return csbi.dwCursorPosition.Y;
+}
+void gotoxy(int x, int y)
+{
+    COORD coordinates;
+    coordinates.X = x;
+    coordinates.Y = y;
+    SetConsoleCursorPosition(GetStdHandle(STD_OUTPUT_HANDLE), coordinates);
+}
+void setConsoleCursor(bool visibility)
+{
+    CONSOLE_CURSOR_INFO ci;
+    HANDLE stdHandle = GetStdHandle(STD_OUTPUT_HANDLE);
+    GetConsoleCursorInfo(stdHandle, &ci);
+    ci.bVisible = visibility;
+    SetConsoleCursorInfo(stdHandle, &ci);
+}
+void setColor(short color)
+{
+    SetConsoleTextAttribute(GetStdHandle(STD_OUTPUT_HANDLE), color);
+}
+short getColor()
+{
+    CONSOLE_SCREEN_BUFFER_INFO csbi;
+    GetConsoleScreenBufferInfo(GetStdHandle(STD_OUTPUT_HANDLE), &csbi);
+    return csbi.wAttributes;
 }
